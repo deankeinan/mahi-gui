@@ -1633,6 +1633,39 @@ static ImVec2 ImPlotGetter2D(void* data, int idx) {
     return ImVec2(ImStrideIndex(data_2d->Xs, idx, data_2d->Stride), ImStrideIndex(data_2d->Ys, idx, data_2d->Stride));
 }
 
+inline void RenderLine(ImDrawList& DrawList, const ImVec2& p1, const ImVec2& p2, float line_weight, ImVec2 uv, ImU32 col_line) {
+    float dx = p2.x - p1.x;
+    float dy = p2.y - p1.y;
+    IM_NORMALIZE2F_OVER_ZERO(dx, dy);
+    dx *= (line_weight * 0.5f);
+    dy *= (line_weight * 0.5f);                    
+    DrawList._VtxWritePtr[0].pos.x = p1.x + dy;
+    DrawList._VtxWritePtr[0].pos.y = p1.y - dx;
+    DrawList._VtxWritePtr[0].uv    = uv;
+    DrawList._VtxWritePtr[0].col   = col_line;
+    DrawList._VtxWritePtr[1].pos.x = p2.x + dy;
+    DrawList._VtxWritePtr[1].pos.y = p2.y - dx;
+    DrawList._VtxWritePtr[1].uv    = uv;
+    DrawList._VtxWritePtr[1].col   = col_line;
+    DrawList._VtxWritePtr[2].pos.x = p2.x - dy;
+    DrawList._VtxWritePtr[2].pos.y = p2.y + dx;
+    DrawList._VtxWritePtr[2].uv    = uv;
+    DrawList._VtxWritePtr[2].col   = col_line;
+    DrawList._VtxWritePtr[3].pos.x = p1.x - dy;
+    DrawList._VtxWritePtr[3].pos.y = p1.y + dx;
+    DrawList._VtxWritePtr[3].uv    = uv;
+    DrawList._VtxWritePtr[3].col   = col_line;
+    DrawList._VtxWritePtr += 4;
+    DrawList._IdxWritePtr[0] = (ImDrawIdx)(DrawList._VtxCurrentIdx);
+    DrawList._IdxWritePtr[1] = (ImDrawIdx)(DrawList._VtxCurrentIdx + 1);
+    DrawList._IdxWritePtr[2] = (ImDrawIdx)(DrawList._VtxCurrentIdx + 2);
+    DrawList._IdxWritePtr[3] = (ImDrawIdx)(DrawList._VtxCurrentIdx);
+    DrawList._IdxWritePtr[4] = (ImDrawIdx)(DrawList._VtxCurrentIdx + 2);
+    DrawList._IdxWritePtr[5] = (ImDrawIdx)(DrawList._VtxCurrentIdx + 3);
+    DrawList._IdxWritePtr += 6;
+    DrawList._VtxCurrentIdx += 4;
+}
+
 void Plot(const char* label_id, const float* values, int count, int offset, int stride) {
     ImPlotGetterData data(nullptr, values, stride);
     Plot(label_id, &ImPlotGetter1D, (void*)&data, count, offset);
@@ -1704,36 +1737,7 @@ void Plot(const char* label_id, ImVec2 (*getter)(void* data, int idx), void* dat
                 p2 = gp.ToPixels(getter(data, i2));
                 i1 = i2;
                 if (!cull || gp.BB_Grid.Contains(p1) || gp.BB_Grid.Contains(p2)) {
-                    float dx = p2.x - p1.x;
-                    float dy = p2.y - p1.y;
-                    IM_NORMALIZE2F_OVER_ZERO(dx, dy);
-                    dx *= (line_weight * 0.5f);
-                    dy *= (line_weight * 0.5f);                    
-                    DrawList._VtxWritePtr[0].pos.x = p1.x + dy;
-                    DrawList._VtxWritePtr[0].pos.y = p1.y - dx;
-                    DrawList._VtxWritePtr[0].uv    = uv;
-                    DrawList._VtxWritePtr[0].col   = col_line;
-                    DrawList._VtxWritePtr[1].pos.x = p2.x + dy;
-                    DrawList._VtxWritePtr[1].pos.y = p2.y - dx;
-                    DrawList._VtxWritePtr[1].uv    = uv;
-                    DrawList._VtxWritePtr[1].col   = col_line;
-                    DrawList._VtxWritePtr[2].pos.x = p2.x - dy;
-                    DrawList._VtxWritePtr[2].pos.y = p2.y + dx;
-                    DrawList._VtxWritePtr[2].uv    = uv;
-                    DrawList._VtxWritePtr[2].col   = col_line;
-                    DrawList._VtxWritePtr[3].pos.x = p1.x - dy;
-                    DrawList._VtxWritePtr[3].pos.y = p1.y + dx;
-                    DrawList._VtxWritePtr[3].uv    = uv;
-                    DrawList._VtxWritePtr[3].col   = col_line;
-                    DrawList._VtxWritePtr += 4;
-                    DrawList._IdxWritePtr[0] = (ImDrawIdx)(DrawList._VtxCurrentIdx);
-                    DrawList._IdxWritePtr[1] = (ImDrawIdx)(DrawList._VtxCurrentIdx + 1);
-                    DrawList._IdxWritePtr[2] = (ImDrawIdx)(DrawList._VtxCurrentIdx + 2);
-                    DrawList._IdxWritePtr[3] = (ImDrawIdx)(DrawList._VtxCurrentIdx);
-                    DrawList._IdxWritePtr[4] = (ImDrawIdx)(DrawList._VtxCurrentIdx + 2);
-                    DrawList._IdxWritePtr[5] = (ImDrawIdx)(DrawList._VtxCurrentIdx + 3);
-                    DrawList._IdxWritePtr += 6;
-                    DrawList._VtxCurrentIdx += 4;
+                    RenderLine(DrawList, p1, p2, line_weight, uv, col_line);
                 }
                 else {
                     segments_culled++;
