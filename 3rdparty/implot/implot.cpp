@@ -259,6 +259,7 @@ struct ImNextPlotData {
 struct ImPlotContext {
     ImPlotContext() {
         CurrentPlot = NULL;
+        FitThisFrame = FitX = FitY = false;
         RestorePlotPalette();
     }
     /// ALl Plots    
@@ -387,7 +388,7 @@ struct ImPlotContext {
 
     // Data extents
     ImRect Extents;
-    bool FitThisFrame;
+    bool FitThisFrame; bool FitX; bool FitY;
     int VisibleItemCount;
     // Render flags
     bool RenderX, RenderY;
@@ -863,10 +864,16 @@ bool BeginPlot(const char* title, const char* x_label, const char* y_label, cons
     
     // DOUBLE CLICK -----------------------------------------------------------
 
-    if ( IO.MouseDoubleClicked[0] && gp.Hov_Frame && gp.Hov_Grid && !hov_legend && !hov_query) 
+    if ( IO.MouseDoubleClicked[0] && gp.Hov_Frame && (hov_x_axis_region || hov_y_axis_region) && !hov_legend && !hov_query) {
         gp.FitThisFrame = true;
-    else
+        gp.FitX = hov_x_axis_region;
+        gp.FitY = hov_y_axis_region;
+    }
+    else {
         gp.FitThisFrame = false;     
+        gp.FitX = false;
+        gp.FitY = false;
+    }
 
     // FOCUS ------------------------------------------------------------------
 
@@ -1238,13 +1245,13 @@ void EndPlot() {
     // FIT DATA --------------------------------------------------------------
 
     if (gp.FitThisFrame && (gp.VisibleItemCount > 0 || plot.Queried)) {
-        if (!HasFlag(plot.XAxis.Flags, ImAxisFlags_LockMin) && !NanOrInf(gp.Extents.Min.x))
+        if (gp.FitX && !HasFlag(plot.XAxis.Flags, ImAxisFlags_LockMin) && !NanOrInf(gp.Extents.Min.x))
             plot.XAxis.Min = gp.Extents.Min.x;
-        if (!HasFlag(plot.XAxis.Flags, ImAxisFlags_LockMax) && !NanOrInf(gp.Extents.Max.x))
+        if (gp.FitX && !HasFlag(plot.XAxis.Flags, ImAxisFlags_LockMax) && !NanOrInf(gp.Extents.Max.x))
             plot.XAxis.Max = gp.Extents.Max.x;
-        if (!HasFlag(plot.YAxis.Flags, ImAxisFlags_LockMin) && !NanOrInf(gp.Extents.Min.y))
+        if (gp.FitY && !HasFlag(plot.YAxis.Flags, ImAxisFlags_LockMin) && !NanOrInf(gp.Extents.Min.y))
             plot.YAxis.Min = gp.Extents.Min.y;
-        if (!HasFlag(plot.YAxis.Flags, ImAxisFlags_LockMax) && !NanOrInf(gp.Extents.Max.y))
+        if (gp.FitY && !HasFlag(plot.YAxis.Flags, ImAxisFlags_LockMax) && !NanOrInf(gp.Extents.Max.y))
             plot.YAxis.Max = gp.Extents.Max.y;        
     }
 
@@ -1293,6 +1300,35 @@ void SetNextPlotRangeY(float y_min, float y_max, ImGuiCond cond) {
     gp.NextPlotData.YRangeCond = cond;
     gp.NextPlotData.YMin = y_min;
     gp.NextPlotData.YMax = y_max;
+}
+
+ImVec2 GetPlotPos() {
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != NULL, "GetPlotPos() Needs to be called between BeginPlot() and EndPlot()!");
+    return gp.BB_Grid.Min;
+}
+
+ImVec2 GetPlotSize() {
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != NULL, "GetPlotSize() Needs to be called between BeginPlot() and EndPlot()!");
+    return gp.BB_Grid.GetSize();
+}
+
+ImVec2 PixelsToPlot(const ImVec2& pix) {
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != NULL, "PixelsToPlot() Needs to be called between BeginPlot() and EndPlot()!");
+    return gp.FromPixels(pix);
+}
+
+ImVec2 PlotToPixels(const ImVec2& plt) {
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != NULL, "PlotToPixels() Needs to be called between BeginPlot() and EndPlot()!");
+    return gp.ToPixels(plt);
+}
+
+void PushPlotClipRect() {
+    IM_ASSERT_USER_ERROR(gp.CurrentPlot != NULL, "PushPlotClipRect() Needs to be called between BeginPlot() and EndPlot()!");
+    PushClipRect(gp.BB_Grid.Min, gp.BB_Grid.Max, true);
+}
+
+void PopPlotClipRect() {
+    PopClipRect();
 }
 
 bool IsPlotHovered() { 
