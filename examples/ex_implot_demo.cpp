@@ -9,14 +9,10 @@ class PlotDemo : public Application {
 public:
     PlotDemo() : Application() { 
         ImGui::StyleColorsDark();
+        set_vsync(false);
     }
     void update() {
-        static bool vsync = true;
-        if (ImGui::IsKeyPressed(GLFW_KEY_V))
-        {
-            vsync = !vsync;
-            set_vsync(vsync);    
-        }
+
         static bool p_open = true;
         ImGui::ShowImPlotDemoWindow(&p_open);
         if (!p_open)

@@ -17,15 +17,10 @@
 // #define MAHI_GUI_NO_CONSOLE
 #include <Mahi/Gui.hpp>
 #include <Mahi/Util.hpp>
+#include "imgui_plot.hpp"
 
 using namespace mahi::gui;
 using namespace mahi::util;
-
-struct PlotItem {
-    std::vector<ImVec2> data;
-    ImVec4 color;
-    std::string label;
-};
 
 class PlotBench : public Application {
 public:
@@ -34,10 +29,9 @@ public:
         ImGui::DisableViewports();
         for (int i = 0; i < 100; ++i)
         {
-            PlotItem item;
+            ImGui::PlotItem item;
             item.data.reserve(1000);
             item.color = random_color();
-            item.label = fmt::format("item_{}",i);
             float y = i * 0.01f;
             for (int i = 0; i < 1000; ++i)
                 item.data.push_back(ImVec2(i*0.001f, y + (float)random_range(-0.01,0.01)));
@@ -50,7 +44,6 @@ public:
         print_var(m);
     }
 
-
     void update() override {
         if (animate) {
             for (int i = 0; i < 100; ++i) {
@@ -61,6 +54,7 @@ public:
                 }
             }
         }
+
         auto [w,h] = get_window_size();
         ImGui::SetNextWindowPos({0,0}, ImGuiCond_FirstUseEver);
         ImGui::SetNextWindowSize(ImVec2(w,h), ImGuiCond_FirstUseEver);
@@ -74,33 +68,34 @@ public:
         ImGui::Checkbox("Render", &render);
         ImGui::SameLine();
         ImGui::Checkbox("Animate", &animate);
+
         ImGui::Text("%lu lines, 1000 pts ea. @ %.3f FPS", items.size(), ImGui::GetIO().Framerate);
-        
         Clock clk;
         static int i;
-        if (ImGui::BeginPlot("##Plot",NULL,NULL,{-1,-1},ImPlotFlags_Default)) {
-            if (render) {         
-                for (int i = 0; i < 100; ++i) {
-                    ImGui::PushPlotColor(ImPlotCol_Line, items[i].color);
-                    ImGui::Plot(items[i].label.c_str(), &items[i].data[0], items[i].data.size(), 0);
-                    ImGui::PopPlotColor();
-                }
-            }
-            ImGui::EndPlot();
-        }   
+        if (render)
+            ImGui::Plot("plot", plot, items);
+        else
+            ImGui::Plot("plot", &plot, nullptr, 0);
         times.push_back(clk.get_elapsed_time().as_seconds());
         // if (++i == 5000)
         //     quit();
 
         ImGui::End();
         // ImGui::ShowMetricsWindow();
+
+        char* labels[2] = {"Evan", "Pezent"};
+        test(labels);
     }
-    
-    RingBuffer<double> times;
-    std::vector<PlotItem> items;
-    float v[2] = {1,2};
+
+    void test(char **arr) {
+
+    }
+
+    ImGui::PlotInterface plot;
+    std::vector<ImGui::PlotItem> items;
     bool render = true;
     bool animate = false;
+    RingBuffer<double> times;
 };
 
 int main(int argc, char const *argv[])
