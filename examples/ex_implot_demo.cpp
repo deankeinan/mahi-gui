@@ -9,7 +9,7 @@ class PlotDemo : public Application {
 public:
     PlotDemo() : Application() { 
         ImGui::StyleColorsDark();
-        set_vsync(false);
+        // set_vsync(false);
     }
     void update() {
 

@@ -82,12 +82,13 @@ enum ImPlotCol_ {
 };
 
 enum ImPlotStyleVar_ {
-    ImPlotStyleVar_LineWeight,     // float, line weight in pixels
-    ImPlotStyleVar_Marker,         // int,   marker specification
-    ImPlotStyleVar_MarkerSize,     // float, marker size in pixels (roughly the marker's "radius")
-    ImPlotStyleVar_MarkerWeight,   // float, outline weight of markers in pixels
-    ImPlotStyleVar_ErrorBarSize,   // float, error bar whisker width in pixels
-    ImPlotStyleVar_ErrorBarWeight, // float, error bar whisker weight in pixels
+    ImPlotStyleVar_LineWeight,       // float, line weight in pixels
+    ImPlotStyleVar_Marker,           // int,   marker specification
+    ImPlotStyleVar_MarkerSize,       // float, marker size in pixels (roughly the marker's "radius")
+    ImPlotStyleVar_MarkerWeight,     // float, outline weight of markers in pixels
+    ImPlotStyleVar_ErrorBarSize,     // float, error bar whisker width in pixels
+    ImPlotStyleVar_ErrorBarWeight,   // float, error bar whisker weight in pixels
+    ImPlotStyleVar_DigitalBitHeight, // float, digital channels bit height (at 1)
     ImPlotStyleVar_COUNT
 };
 
@@ -121,6 +122,7 @@ struct ImPlotStyle {
     float    MarkerWeight;            // = 1, outline weight of markers in pixels
     float    ErrorBarSize;            // = 5, error bar whisker width in pixels
     float    ErrorBarWeight;          // = 1.5, error bar whisker weight in pixels
+    float    DigitalBitHeight;        // = 8, digital channels bit height (at y = 1.0f)
     ImVec4   Colors[ImPlotCol_COUNT]; // array of plot specific colors
     ImPlotStyle();
 };
@@ -170,9 +172,12 @@ void PlotErrorBars(const char* label_id, const float* xs, const float* ys, const
 void PlotErrorBars(const char* label_id, const float* xs, const float* ys, const float* neg, const float* pos, int count, int offset = 0, int stride = sizeof(float));
 void PlotErrorBars(const char* label_id, ImVec4 (*getter)(void* data, int idx), void* data, int count, int offset = 0);
 // Plots a pie chart. If the sum of values > 1, each value will be normalized. Center and radius are in plot coordinates.
-void PlotPieChart(char** label_ids, float* values, int count, const ImVec2& center, float radius, bool show_percents = true, float angle0 = 90);
+void PlotPieChart(const char** label_ids, float* values, int count, const ImVec2& center, float radius, bool show_percents = true, float angle0 = 90);
 // Plots a text label at point x,y.
 void PlotLabel(const char* text, float x, float y, bool vertical = false, const ImVec2& pixel_offset = ImVec2(0,0));
+// Plots digital channels.
+void PlotDigital(const char* label_id, const float* xs, const float* ys, int count, int offset = 0, int stride = sizeof(float));
+void PlotDigital(const char* label_id, ImVec2 (*getter)(void* data, int idx), void* data, int count, int offset = 0);
 
 //-----------------------------------------------------------------------------
 // Plot Queries
@@ -223,7 +228,7 @@ void PopPlotStyleVar(int count = 1);
 void SetNextPlotRange(float x_min, float x_max, float y_min, float y_max, ImGuiCond cond = ImGuiCond_Once);
 /// Set the X axis range of the next plot. Call right before BeginPlot(). If ImGuiCond_Always is used, the axis will be locked.
 void SetNextPlotRangeX(float x_min, float x_max, ImGuiCond cond = ImGuiCond_Once);
-/// Set the X axis range of the next plot. Call right before BeginPlot(). If ImGuiCond_Always is used, the axis will be locked.
+/// Set the Y axis range of the next plot. Call right before BeginPlot(). If ImGuiCond_Always is used, the axis will be locked.
 void SetNextPlotRangeY(float y_min, float y_max, ImGuiCond cond = ImGuiCond_Once);
 
 // Get the current Plot position (top-left) in pixels.

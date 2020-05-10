@@ -22,6 +22,10 @@
 
 // ImPlot v0.1 WIP
 
+#ifdef _MSC_VER
+#pragma warning (disable: 4996) // 'This function or variable may be unsafe': strcpy, strdup, sprintf, vsnprintf, sscanf, fopen
+#endif
+
 #include <implot.h>
 #include <math.h>
 #include <stdio.h>
@@ -46,6 +50,12 @@ struct ScrollingData {
             Offset =  (Offset + 1) % MaxSize;
         }
     }
+    void Erase() {
+        if (Data.size() > 0) {
+            Data.shrink(0);
+            Offset  = 0;
+        }
+    }    
 };
 
 struct RollingData {
@@ -81,7 +91,7 @@ namespace ImGui {
     
 void ShowImPlotDemoWindow(bool* p_open) {
 
-    ImVec2 main_viewport_pos = ImGui::GetMainViewport()->Pos;
+    //ImVec2 main_viewport_pos = ImGui::GetMainViewport()->Pos;
     ImGui::SetNextWindowPos(ImVec2(50, 50), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(520, 750), ImGuiCond_FirstUseEver);
     ImGui::Begin("ImPlot Demo", p_open);
@@ -212,7 +222,7 @@ void ShowImPlotDemoWindow(bool* p_open) {
     }
     //-------------------------------------------------------------------------
     if (ImGui::CollapsingHeader("Pie Charts")) {
-        static char* labels1[]   = {"Frogs","Hogs","Dogs","Logs"};
+        static const char* labels1[]   = {"Frogs","Hogs","Dogs","Logs"};
         static float pre_normalized[] = {0.15f,  0.30f,  0.45f, 0.10f};
         ImVec2 center(0.5f,0.5f); // in plot units, not pixels
         float radius = 0.4f;      // in plot units, not pixels
@@ -233,7 +243,7 @@ void ShowImPlotDemoWindow(bool* p_open) {
         };
         ImGui::SetPlotPalette(YlOrRd, 5);
         SetNextPlotRange(0,1,0,1,ImGuiCond_Always);
-        static char* labels2[]   = {"One","Two","Three","Four","Five"};
+        static const char* labels2[]   = {"One","Two","Three","Four","Five"};
         static float not_normalized[] = {1,2,3,4,5};
         if (ImGui::BeginPlot("##Pie2", NULL, NULL, ImVec2(250,250), ImPlotFlags_Legend, 0, 0)) {
             ImGui::PlotPieChart(labels2, not_normalized, 5, center, radius);
@@ -509,6 +519,122 @@ void ShowImPlotDemoWindow(bool* p_open) {
             if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_PLOT")) {
                 int i = *(int*)payload->Data;
                 show[i] = true;
+            }
+            ImGui::EndDragDropTarget();
+        }
+    }
+
+    if (ImGui::CollapsingHeader("Digital and Analog Signals")) {
+
+
+        static bool paused = false;
+        #define K_PLOT_DIGITAL_CH_COUNT 4
+        #define K_PLOT_ANALOG_CH_COUNT  4
+        static ScrollingData dataDigital[K_PLOT_DIGITAL_CH_COUNT];
+        static ScrollingData dataAnalog[K_PLOT_ANALOG_CH_COUNT];
+        static bool showDigital[K_PLOT_DIGITAL_CH_COUNT];
+        static bool showAnalog[K_PLOT_ANALOG_CH_COUNT];
+
+        ImGui::BulletText("You can plot digital and analog signals on the same plot.");
+        ImGui::BulletText("Digital signals do not respond to Y drag and zoom, so that");
+        ImGui::Indent();
+        ImGui::Text("you can drag analog signals over the rising/falling digital edge.");
+        ImGui::Unindent();
+        static float bitHeight = 8;
+        ImGui::BeginGroup();
+        if (ImGui::Button("Clear", {100, 0})) {
+            for (int i = 0; i < K_PLOT_DIGITAL_CH_COUNT; ++i)
+                showDigital[i] = false;
+            for (int i = 0; i < K_PLOT_ANALOG_CH_COUNT; ++i)
+                showAnalog[i] = false;
+        }
+        if (ImGui::Button(paused ? "Resume" : "Pause", {100,0}))
+            paused = !paused;
+        ImGui::SetNextItemWidth(100);
+        ImGui::DragFloat("##Bit Height", &bitHeight, 1, 5, 25, "%.0f px");
+        ImGui::Separator();
+        for (int i = 0; i < K_PLOT_DIGITAL_CH_COUNT; ++i) {
+            char label[32];
+            sprintf(label, "digital_%d", i);
+            ImGui::Checkbox(label, &showDigital[i]);
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+                ImGui::SetDragDropPayload("DND_DIGITAL_PLOT", &i, sizeof(int));
+                ImGui::TextUnformatted(label);
+                ImGui::EndDragDropSource();
+            }
+        }
+        for (int i = 0; i < K_PLOT_ANALOG_CH_COUNT; ++i) {
+            char label[32];
+            sprintf(label, "analog_%d", i);
+            ImGui::Checkbox(label, &showAnalog[i]);
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None)) {
+                ImGui::SetDragDropPayload("DND_ANALOG_PLOT", &i, sizeof(int));
+                ImGui::TextUnformatted(label);
+                ImGui::EndDragDropSource();
+            }
+        }
+        ImGui::EndGroup();
+        ImGui::SameLine();
+        static float t = 0;
+        if (!paused) {
+            t += ImGui::GetIO().DeltaTime;
+            //digital signal values
+            int i = 0;
+            if (showDigital[i])
+                dataDigital[i].AddPoint(t, sin(2*t) > 0.45);
+            i++;
+            if (showDigital[i])
+                dataDigital[i].AddPoint(t, sin(2*t) < 0.45);
+            i++;
+            if (showDigital[i])
+                dataDigital[i].AddPoint(t, sin(2*t) > 0.83);
+            i++;
+            if (showDigital[i])
+                dataDigital[i].AddPoint(t, sin(2*t) < 0.17);
+            //Analog signal values
+            i = 0;
+            if (showAnalog[i])
+                dataAnalog[i].AddPoint(t, sin(2*t));
+            i++;
+            if (showAnalog[i])
+                dataAnalog[i].AddPoint(t, cos(2*t));
+            i++;
+            if (showAnalog[i])
+                dataAnalog[i].AddPoint(t, sin(2*t) * cos(2*t));
+            i++;
+            if (showAnalog[i])
+                dataAnalog[i].AddPoint(t, sin(2*t) - cos(2*t));
+        }
+        ImGui::SetNextPlotRangeY(-1, 1);
+        ImGui::SetNextPlotRangeX(t - 10.0f, t, paused ? ImGuiCond_Once : ImGuiCond_Always);
+        if (ImGui::BeginPlot("##Digital", NULL, NULL, ImVec2(-1,300), ImPlotFlags_Default)) {
+            for (int i = 0; i < K_PLOT_DIGITAL_CH_COUNT; ++i) {
+                if (showDigital[i]) {
+                    char label[32];
+                    sprintf(label, "digital_%d", i);
+                    ImGui::PushPlotStyleVar(ImPlotStyleVar_DigitalBitHeight, bitHeight);
+                    ImGui::PlotDigital(label, &dataDigital[i].Data[0].x, &dataDigital[i].Data[0].y, dataDigital[i].Data.size(), dataDigital[i].Offset, 2 * sizeof(float));
+                    ImGui::PopPlotStyleVar();
+                }
+            }
+            for (int i = 0; i < K_PLOT_ANALOG_CH_COUNT; ++i) {
+                if (showAnalog[i]) {
+                    char label[32];
+                    sprintf(label, "analog_%d", i);
+                    if (dataAnalog[i].Data.size() > 0)
+                        ImGui::Plot(label, &dataAnalog[i].Data[0].x, &dataAnalog[i].Data[0].y, dataAnalog[i].Data.size(), dataAnalog[i].Offset, 2 * sizeof(float));
+                }
+            }
+            ImGui::EndPlot();
+        }
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_DIGITAL_PLOT")) {
+                int i = *(int*)payload->Data;
+                showDigital[i] = true;
+            }
+            else if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("DND_ANALOG_PLOT")) {
+                int i = *(int*)payload->Data;
+                showAnalog[i] = true;
             }
             ImGui::EndDragDropTarget();
         }
