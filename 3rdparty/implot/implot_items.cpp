@@ -324,7 +324,7 @@ struct GetterFuncPtr {
         Offset(count ? ImPosMod(offset, count) : 0)
     { }
     inline ImPlotPoint operator()(int idx) const {
-        idx = ImPosMod(Offset + idx, Count);
+        // idx = ImPosMod(Offset + idx, Count);
         return Getter(Data, idx);
     }
     ImPlotPoint (* const Getter)(void* data, int idx);
