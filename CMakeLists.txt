@@ -105,6 +105,11 @@ set(IMPLOT_HEADERS 3rdparty/implot/implot.h 3rdparty/implot/implot_internal.h)
 set(IMPLOT_SRC     3rdparty/implot/implot.cpp 3rdparty/implot/implot_items.cpp 3rdparty/implot/implot_demo.cpp)
 set(IMPLOT_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/implot)
 
+
+set(IMNODES_SRC 3rdparty/imnodes/imnodes.cpp)
+set(IMNODES_HEADERS 3rdparty/imnodes/imnodes.h)
+set(IMNODES_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/imnodes)
+
 # NANOVG
 add_subdirectory(3rdparty/nanovg)
 install(TARGETS nanovg EXPORT mahi-gui-targets
@@ -135,7 +140,7 @@ FetchContent_MakeAvailable(mahi-util)
 #===============================================================================
 
 # create target and add an alias
-add_library(gui "")
+add_library(gui "" 3rdparty/imnodes/imnodes.cpp 3rdparty/imnodes/imnodes.h)
 add_library(mahi::gui ALIAS gui)
 set_target_properties(gui PROPERTIES DEBUG_POSTFIX -d)
 target_compile_features(gui PUBLIC cxx_std_17)
@@ -156,7 +161,7 @@ add_subdirectory(src/Mahi/Gui)
 
 target_sources(gui PRIVATE ${IMGUI_SRC} ${IMGUI_HEADERS})
 target_sources(gui PRIVATE ${IMPLOT_SRC} ${IMPLOT_HEADERS})
-
+target_sources(gui PRIVATE ${IMNODES_SRC} ${IMNODES_HEADERS})
 # add include files
 file(GLOB_RECURSE MAHI_GUI_INCLUDE "include/*.hpp" "include/*.inl" "include/*.h")
 target_sources(gui PRIVATE ${MAHI_GUI_INCLUDE}) # for intellisense
@@ -166,6 +171,7 @@ target_include_directories(gui
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${IMGUI_INCLUDE_DIR}>
         $<BUILD_INTERFACE:${IMPLOT_INCLUDE_DIR}>
+		$<BUILD_INTERFACE:${IMNODES_INCLUDE_DIR}>
         $<BUILD_INTERFACE:${NANOSVG_INCLUDE_DIR}>
 	PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
@@ -211,6 +217,7 @@ install(DIRECTORY include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(DIRECTORY 3rdparty/glad/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(FILES ${IMGUI_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(FILES ${IMPLOT_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(FILES ${IMNODES_HEADERS} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(FILES 3rdparty/nanovg/src/nanovg.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(FILES 3rdparty/nanosvg/src/nanosvg.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 install(FILES 3rdparty/clipper/clipper.hpp DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
