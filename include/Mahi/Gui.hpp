@@ -21,3 +21,4 @@
 #include <nanovg_gl_utils.h>
 #include <imgui_stdlib.h>
 #include <implot.h>
+#include <imnodes.h>

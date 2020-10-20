@@ -24,6 +24,7 @@
 #include <Mahi/Util/Event.hpp>
 #include <Mahi/Util/Timing/Time.hpp>
 #include <Mahi/Util/Timing/Frequency.hpp>
+#include "imnodes.h"
 
 #ifdef MAHI_COROUTINES
 #include <Mahi/Gui/Coroutine.hpp>

@@ -13,6 +13,7 @@
 #include "examples/imgui_impl_glfw.h"
 #include "examples/imgui_impl_opengl3.h"
 #include "implot.h"
+#include "imnodes.h"
 #include <stdexcept>
 
 #ifdef __linux__
@@ -140,6 +141,7 @@ Application::Application(const Config &conf) :
     if (!m_implot_context)
         throw std::runtime_error("Failed to create ImPlot context!");
     ImPlot::SetColormap(ImPlotColormap_Deep);
+    imnodes::Initialize();
 }
 
 Application::Application() :
@@ -158,6 +160,7 @@ Application::Application(int width, int height, const std::string &title, bool r
 Application::~Application() {
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
+    imnodes::Shutdown();
     if (m_implot_context) {
         ImPlot::DestroyContext(m_implot_context);
         m_implot_context = nullptr;
